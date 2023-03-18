@@ -1,0 +1,16 @@
+body{
+    /* background-color: #153743; */
+    background-color:#662d91 ;
+    display: flex;
+   justify-content: center;
+}
+
+.App{
+    color:#EBACC4 ;
+}
+.genre-filter{
+    color:rgb(81, 141, 141);
+}
+
+
+
