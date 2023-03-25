@@ -26,64 +26,105 @@ import './App.css';
 
 
 import React, { useState } from 'react';
-import MovieList from './Components/MovieList';
-import GenreFilter from './Components/GenreFilter';
-import "./Components/style.css"
 
+function App() {
+  const [pincode, setPincode] = useState('');
+  const [postalData, setPostalData] = useState(null);
+  const [filteredData, setFilteredData] = useState(null);
+  const [filterText, setFilterText] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-const movies = [
-  { title: 'The Shawshank Redemption', genre: 'Drama', year: 1994 },
-  { title: 'The Godfather', genre: 'Crime', year: 1972 },
-  { title: 'The Dark Knight', genre: 'Action', year: 2008 },
-  { title: '12 Angry Men', genre: 'Drama', year: 1957 },
-  { title: "Schindler's List", genre: 'Drama', year: 1993 },
-  {
-    title: 'The Lord of the Rings: The Return of the King',
-    genre: 'Fantasy',
-    year: 2003
-  },
-  { title: 'The Good, the Bad and the Ugly', genre: 'Western', year: 1966 },
-  { title: 'Forrest Gump', genre: 'Drama', year: 1994 },
-  { title: 'Inception', genre: 'Science Fiction', year: 2010 },
-  { title: 'The Matrix', genre: 'Science Fiction', year: 1999 },
-  { title: 'The Silence of the Lambs', genre: 'Thriller', year: 1991 },
-  { title: 'Saving Private Ryan', genre: 'War', year: 1998 },
-  { title: 'Jurassic Park', genre: 'Science Fiction', year: 1993 },
-  { title: 'Terminator 2: Judgment Day', genre: 'Science Fiction', year: 1991 },
-  { title: 'The Lion King', genre: 'Animation', year: 1994 }
-];
-
-const genres = [
-  'Drama',
-  'Crime',
-  'Action',
-  'Fantasy',
-  'Western',
-  'Science Fiction',
-  'Thriller',
-  'War',
-  'Animation'
-];
-
-const App = () => {
-  const [selectedGenre, setSelectedGenre] = useState('');
-
-  const handleGenreSelect = (genre) => {
-    console.log(`Selected genre: ${genre}`);
-    setSelectedGenre(genre);
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (pincode.length !== 6) {
+      setError('Pincode should be 6 digits');
+      return;
+    }
+    setIsLoading(true);
+    setError(null);
+    const response = await fetch(`https://api.postalpincode.in/pincode/${pincode}`);
+    const data = await response.json();
+    setIsLoading(false);
+    if (data[0].Status === 'Error') {
+      setError(data[0].Message);
+      setPostalData(null);
+      return;
+    }
+    setPostalData(data[0].PostOffice);
   };
 
-  const filteredMovies =
-    selectedGenre === ''
-      ? movies
-      : movies.filter((movie) => movie.genre === selectedGenre);
+  const handleFilter = (e) => {
+    const searchText = e.target.value.toLowerCase();
+    setFilterText(searchText);
+    if (searchText.length === 0) {
+      setFilteredData(null);
+      return;
+    }
+    const filtered = postalData.filter((office) =>
+      office.Name.toLowerCase().includes(searchText)
+    );
+    setFilteredData(filtered.length > 0 ? filtered : 'no-data');
+  };
 
   return (
     <div className="App">
-      <GenreFilter genres={genres} onGenreSelect={handleGenreSelect} />
-      <MovieList movies={filteredMovies} />
+      <form onSubmit={handleSubmit}>
+        <label htmlFor="pincode">Enter Pincode:</label>
+        <input
+          type="text"
+          id="pincode"
+          value={pincode}
+          onChange={(e) => setPincode(e.target.value)}
+        />
+        <button type="submit">Lookup</button>
+      </form>
+      {isLoading && <div className="loader">Loading...</div>}
+      {error && <div className="error">{error}</div>}
+      {postalData && (
+        <div className="postal-data">
+          <h2>Postal Data</h2>
+          <ul>
+            {postalData.map((office) => (
+              <li key={office.Name}>
+                <div>{office.Name}</div>
+                <div>{office.Pincode}</div>
+                <div>{office.District}</div>
+                <div>{office.State}</div>
+              </li>
+            ))}
+          </ul>
+          <label htmlFor="filter">Filter by Post Office Name:</label>
+          <input
+            type="text"
+            id="filter"
+            value={filterText}
+            onChange={handleFilter}
+          />
+          {filteredData === 'no-data' && (
+            <div className="no-data">
+              Couldn't find the postal data you're looking for...
+            </div>
+          )}
+          {filteredData && filteredData !== 'no-data' && (
+            <div className="filtered-data">
+              <h2>Filtered Postal Data</h2>
+              <ul>
+                {filteredData.map((office) => (
+                  <li key={office.Name}>
+                    <div>{office.Name}</div>
+                    <div>{office.Pincode}</div>
+                    <div>{office.District}</div>
+                    <div>{office.State}</div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
-};
+}
 
 export default App;
